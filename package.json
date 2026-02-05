@@ -1,0 +1,16 @@
+{
+  "name": "gemini-url-quickopen",
+  "version": "1.0.0",
+  "description": "一个简洁的浏览器插件（支持 Chrome 和 Firefox），点击图标即可将当前网页 URL 发送到 Gemini 进行分析。",
+  "main": "background.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "canvas": "^3.2.1"
+  }
+}
