@@ -41,5 +41,10 @@
       "id": "gemini-url@quickopen",
       "strict_min_version": "128.0"
     }
+  },
+  "commands": {
+    "open-gemini": {
+      "description": "在 Gemini 中打开当前页面"
+    }
   }
 }

@@ -35,5 +35,10 @@
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "commands": {
+    "open-gemini": {
+      "description": "在 Gemini 中打开当前页面"
+    }
   }
 }
