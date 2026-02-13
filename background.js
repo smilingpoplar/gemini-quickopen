@@ -1,5 +1,5 @@
 import { DEFAULT_PROMPT, matchRule } from './url-pattern.js';
-const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
+import { loadUrlPatterns, saveUrlPatterns } from './rule-config.js';
 
 function normalizeContentText(text) {
   return (text || '').replace(/\s+/g, ' ').trim();
@@ -8,13 +8,13 @@ function normalizeContentText(text) {
 async function extractTextBySelector(tabId, selector) {
   if (!selector) return '';
 
-  if (!browserAPI.scripting?.executeScript) {
+  if (!browser.scripting?.executeScript) {
     console.warn('当前浏览器不支持 scripting.executeScript，跳过 selector 提取');
     return '';
   }
 
   try {
-    const results = await browserAPI.scripting.executeScript({
+    const results = await browser.scripting.executeScript({
       target: { tabId },
       func: (rawSelector) => {
         try {
@@ -36,60 +36,58 @@ async function extractTextBySelector(tabId, selector) {
   }
 }
 
-// 打开 Gemini 的核心逻辑
+async function getCurrentTab() {
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  return tab;
+}
+
+async function buildGeminiQueryText(currentUrl, tabId, matchedRule) {
+  const prompt = matchedRule.prompt || DEFAULT_PROMPT;
+  const cssSelector = (matchedRule.cssSelector || '').trim();
+
+  if (!cssSelector || typeof tabId !== 'number') {
+    return `${currentUrl}\n${prompt}`;
+  }
+
+  const extractedText = normalizeContentText(await extractTextBySelector(tabId, cssSelector));
+  return `${prompt}\n${extractedText}`;
+}
+
+async function openGeminiWithTab(tab) {
+  const resolvedTab = tab?.url ? tab : await getCurrentTab();
+  const currentUrl = resolvedTab?.url;
+  const tabId = resolvedTab?.id;
+
+  if (!currentUrl || !currentUrl.startsWith('http')) {
+    return;
+  }
+
+  const urlPatterns = await loadUrlPatterns();
+  const matchedRule = matchRule(currentUrl, urlPatterns);
+  const queryText = await buildGeminiQueryText(currentUrl, tabId, matchedRule);
+  const geminiUrl = `https://gemini.google.com/app?q=${encodeURIComponent(queryText)}`;
+  await browser.tabs.create({ url: geminiUrl });
+}
+
 async function openGeminiWithCurrentTab() {
   try {
-    const [tab] = await browserAPI.tabs.query({ active: true, currentWindow: true });
-    const currentUrl = tab.url;
-    const tabId = tab.id;
-
-    // 如果 URL 不是 http/https 开头，不执行任何操作
-    if (!currentUrl || !currentUrl.startsWith('http')) {
-      return;
-    }
-
-    const result = await browserAPI.storage.sync.get(['urlPatterns']);
-    const urlPatterns = (result.urlPatterns || []).map((rule) => ({
-      ...rule,
-      cssSelector: rule.urlPattern === '*' ? '' : (rule.cssSelector || '')
-    }));
-
-    const matchedRule = matchRule(currentUrl, urlPatterns);
-    const prompt = matchedRule.prompt || DEFAULT_PROMPT;
-    const cssSelector = (matchedRule.cssSelector || '').trim();
-
-    let queryText = `${currentUrl}\n${prompt}`;
-    if (cssSelector && typeof tabId === 'number') {
-      const extractedText = normalizeContentText(await extractTextBySelector(tabId, cssSelector));
-      queryText = `${prompt}\n${extractedText}`;
-    }
-
-    const geminiUrl = `https://gemini.google.com/app?q=${encodeURIComponent(queryText)}`;
-    await browserAPI.tabs.create({ url: geminiUrl });
+    const tab = await getCurrentTab();
+    await openGeminiWithTab(tab);
   } catch (error) {
     console.error('打开 Gemini 时出错:', error);
   }
 }
 
-browserAPI.runtime.onInstalled.addListener(() => {
-  browserAPI.storage.sync.get(['urlPatterns'], ({ urlPatterns = [] }) => {
-    if (!urlPatterns.some(p => p.urlPattern === '*')) {
-      urlPatterns.push({
-        id: Date.now().toString(36),
-        urlPattern: '*',
-        cssSelector: '',
-        prompt: DEFAULT_PROMPT
-      });
-      browserAPI.storage.sync.set({ urlPatterns });
-    }
-  });
+browser.runtime.onInstalled.addListener(async () => {
+  const urlPatterns = await loadUrlPatterns();
+  await saveUrlPatterns(urlPatterns);
 });
 
-browserAPI.action.onClicked.addListener(async (tab) => {
-  await openGeminiWithCurrentTab();
+browser.action.onClicked.addListener(async (tab) => {
+  await openGeminiWithTab(tab);
 });
 
-browserAPI.commands.onCommand.addListener(async (command) => {
+browser.commands.onCommand.addListener(async (command) => {
   if (command === 'open-gemini') {
     await openGeminiWithCurrentTab();
   }

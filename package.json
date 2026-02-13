@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "点击图标即可将当前网页 URL 发送到 Gemini 进行分析。",
   "scripts": {
-    "dev": "extension dev",
-    "start": "extension start",
-    "preview": "extension preview",
+    "dev": "extension dev --polyfill",
+    "start": "extension start --polyfill",
+    "preview": "extension preview --polyfill",
     "build": "npm run build:chrome && npm run build:firefox",
-    "build:chrome": "extension build --browser=chrome --zip",
-    "build:firefox": "extension build --browser=firefox --zip",
+    "build:chrome": "extension build --browser=chrome --polyfill --zip",
+    "build:firefox": "extension build --browser=firefox --polyfill --zip",
     "test": "node --test"
   },
   "keywords": [],

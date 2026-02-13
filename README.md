@@ -24,7 +24,7 @@ npm run dev
 指定 Firefox 开发：
 
 ```bash
-npx extension dev --browser=firefox
+npx extension dev --browser=firefox --polyfill
 ```
 
 构建两个浏览器：
@@ -65,6 +65,8 @@ npm run build:firefox
 - `background.service_worker` 作为 Chromium 默认实现
 - `firefox:background.scripts` 覆盖 Firefox 后台脚本配置
 - `firefox:browser_specific_settings` 提供 Gecko 扩展 ID
+
+运行时 API 统一使用 `browser.*`。项目脚本已显式开启 extension.js 的 `--polyfill` 选项，确保 Chromium 与 Firefox 行为一致。
 
 ## 功能说明
 
