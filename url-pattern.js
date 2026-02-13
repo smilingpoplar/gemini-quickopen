@@ -1,6 +1,5 @@
 import { isValidPattern, patternToRegex } from 'webext-patterns';
-
-const DEFAULT_PROMPT = "请总结";
+import { DEFAULT_PROMPT } from './constants.js';
 
 function parsePatterns(text) {
   return text.split('\n').map(p => p.trim()).filter(Boolean);
@@ -55,7 +54,6 @@ function matchRule(currentUrl, urlPatterns) {
 }
 
 export {
-  DEFAULT_PROMPT,
   normalizeUrlPatternInput,
   parsePatterns,
   urlMatchPatternToRegex,

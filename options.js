@@ -4,7 +4,7 @@ import {
   loadUrlPatterns,
   saveUrlPatterns
 } from './rule-config.js';
-import { DEFAULT_PROMPT } from './url-pattern.js';
+import { DEFAULT_PROMPT } from './constants.js';
 
 const rulesContainer = document.getElementById('rulesContainer');
 const addBtn = document.getElementById('addBtn');

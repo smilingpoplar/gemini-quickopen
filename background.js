@@ -1,4 +1,5 @@
-import { DEFAULT_PROMPT, matchRule } from './url-pattern.js';
+import { DEFAULT_PROMPT } from './constants.js';
+import { matchRule } from './url-pattern.js';
 import { loadUrlPatterns, saveUrlPatterns } from './rule-config.js';
 
 function normalizeContentText(text) {

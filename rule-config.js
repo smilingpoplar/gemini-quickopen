@@ -1,4 +1,4 @@
-import { DEFAULT_PROMPT } from './url-pattern.js';
+import { DEFAULT_PROMPT } from './constants.js';
 
 function generateRuleId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);

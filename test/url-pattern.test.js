@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  DEFAULT_PROMPT,
   normalizeUrlPatternInput,
   urlMatchPatternToRegex,
   matchRule
 } from '../url-pattern.js';
+import { DEFAULT_PROMPT } from '../constants.js';
 
 test('normalizeUrlPatternInput should auto-complete bare domains', () => {
   assert.equal(normalizeUrlPatternInput('github.com'), '*://github.com/*');
