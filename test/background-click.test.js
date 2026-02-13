@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-function createMockBrowser({ currentUrl, urlPatterns }) {
+function createMockBrowser({ currentUrl, promptConfig }) {
   const events = {
     onInstalled: null,
     onClicked: null,
@@ -12,7 +12,7 @@ function createMockBrowser({ currentUrl, urlPatterns }) {
 
   const storageSync = {
     get(keys, callback) {
-      const result = { urlPatterns };
+      const result = { promptConfig };
       if (typeof callback === 'function') {
         callback(result);
         return;
@@ -74,10 +74,24 @@ function createMockBrowser({ currentUrl, urlPatterns }) {
 test('click action should use matched configured prompt for wallstreetcn livenews page', async () => {
   const mock = createMockBrowser({
     currentUrl: 'https://wallstreetcn.com/livenews/3055332',
-    urlPatterns: [
-      { id: '1', urlPattern: 'wallstreetcn.com/livenews', cssSelector: '', prompt: '按我的配置总结要点' },
-      { id: '2', urlPattern: '*', cssSelector: '', prompt: '请总结' }
-    ]
+    promptConfig: {
+      promptGroups: [
+        {
+          id: '1',
+          prompt: '按我的配置总结要点',
+          isDefault: false,
+          rules: [
+            { id: 'r1', urlPattern: 'wallstreetcn.com/livenews', cssSelector: '' }
+          ]
+        },
+        {
+          id: '2',
+          prompt: '请总结',
+          isDefault: true,
+          rules: []
+        }
+      ]
+    }
   });
 
   globalThis.browser = mock.browser;
@@ -102,3 +116,4 @@ test('click action should use matched configured prompt for wallstreetcn livenew
   delete globalThis.browser;
   delete globalThis.chrome;
 });
+

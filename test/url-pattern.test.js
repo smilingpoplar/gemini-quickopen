@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   normalizeUrlPatternInput,
   urlMatchPatternToRegex,
-  matchRule
+  findMatchingGroup
 } from '../src/url-pattern.js';
 import { DEFAULT_PROMPT } from '../src/constants.js';
 
@@ -40,34 +40,80 @@ test('urlMatchPatternToRegex should return null for invalid pattern', () => {
   assert.equal(regex, null);
 });
 
-test('matchRule should return first matched rule by order', () => {
-  const rules = [
-    { id: '1', urlPattern: '*.github.com\nexample.com', prompt: 'rule-1' },
-    { id: '2', urlPattern: 'github.com', prompt: 'rule-2' },
-    { id: '3', urlPattern: '*', prompt: 'default' }
-  ];
+test('findMatchingGroup should return first matched group by order', () => {
+  const config = {
+    promptGroups: [
+      {
+        id: '1',
+        prompt: 'rule-1',
+        isDefault: false,
+        rules: [
+          { id: 'r1', urlPattern: '*.github.com', cssSelector: '' },
+          { id: 'r2', urlPattern: 'example.com', cssSelector: '' }
+        ]
+      },
+      {
+        id: '2',
+        prompt: 'rule-2',
+        isDefault: false,
+        rules: [
+          { id: 'r3', urlPattern: 'github.com', cssSelector: '' }
+        ]
+      },
+      {
+        id: '3',
+        prompt: 'default',
+        isDefault: true,
+        rules: []
+      }
+    ]
+  };
 
-  const matched = matchRule('https://docs.github.com/en', rules);
+  const matched = findMatchingGroup('https://docs.github.com/en', config);
   assert.equal(matched.prompt, 'rule-1');
 });
 
-test('matchRule should fallback to default rule', () => {
-  const rules = [
-    { id: '1', urlPattern: 'github.com', prompt: 'rule-1' },
-    { id: '2', urlPattern: '*', prompt: 'default', cssSelector: '#app' }
-  ];
+test('findMatchingGroup should fallback to default group', () => {
+  const config = {
+    promptGroups: [
+      {
+        id: '1',
+        prompt: 'rule-1',
+        isDefault: false,
+        rules: [
+          { id: 'r1', urlPattern: 'github.com', cssSelector: '' }
+        ]
+      },
+      {
+        id: '2',
+        prompt: 'default',
+        isDefault: true,
+        rules: []
+      }
+    ]
+  };
 
-  const matched = matchRule('https://news.ycombinator.com', rules);
+  const matched = findMatchingGroup('https://news.ycombinator.com', config);
   assert.equal(matched.prompt, 'default');
   assert.equal(matched.cssSelector, '');
 });
 
-test('matchRule should fallback to hardcoded default when no default rule', () => {
-  const rules = [
-    { id: '1', urlPattern: 'github.com', prompt: 'rule-1' }
-  ];
+test('findMatchingGroup should fallback to hardcoded default when no default group', () => {
+  const config = {
+    promptGroups: [
+      {
+        id: '1',
+        prompt: 'rule-1',
+        isDefault: false,
+        rules: [
+          { id: 'r1', urlPattern: 'github.com', cssSelector: '' }
+        ]
+      }
+    ]
+  };
 
-  const matched = matchRule('https://news.ycombinator.com', rules);
+  const matched = findMatchingGroup('https://news.ycombinator.com', config);
   assert.equal(matched.prompt, DEFAULT_PROMPT);
   assert.equal(matched.cssSelector, '');
 });
+

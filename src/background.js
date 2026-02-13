@@ -1,6 +1,6 @@
 import { DEFAULT_PROMPT } from './constants.js';
-import { matchRule } from './url-pattern.js';
-import { loadUrlPatterns, saveUrlPatterns } from './options/rule-config.js';
+import { findMatchingGroup } from './url-pattern.js';
+import { loadConfig, saveConfig } from './options/prompt-config.js';
 
 function normalizeContentText(text) {
   return (text || '').replace(/\s+/g, ' ').trim();
@@ -42,9 +42,9 @@ async function getCurrentTab() {
   return tab;
 }
 
-async function buildGeminiQueryText(currentUrl, tabId, matchedRule) {
-  const prompt = matchedRule.prompt || DEFAULT_PROMPT;
-  const cssSelector = (matchedRule.cssSelector || '').trim();
+async function buildGeminiQueryText(currentUrl, tabId, matchedResult) {
+  const prompt = matchedResult.prompt || DEFAULT_PROMPT;
+  const cssSelector = (matchedResult.cssSelector || '').trim();
 
   if (!cssSelector || typeof tabId !== 'number') {
     return `${currentUrl}\n${prompt}`;
@@ -63,9 +63,9 @@ async function openGeminiWithTab(tab) {
     return;
   }
 
-  const urlPatterns = await loadUrlPatterns();
-  const matchedRule = matchRule(currentUrl, urlPatterns);
-  const queryText = await buildGeminiQueryText(currentUrl, tabId, matchedRule);
+  const config = await loadConfig();
+  const matchedResult = findMatchingGroup(currentUrl, config);
+  const queryText = await buildGeminiQueryText(currentUrl, tabId, matchedResult);
 
   const geminiUrl = 'https://gemini.google.com/app';
   const newTab = await browser.tabs.create({ url: geminiUrl });
@@ -97,8 +97,8 @@ async function openGeminiWithCurrentTab() {
 }
 
 browser.runtime.onInstalled.addListener(async () => {
-  const urlPatterns = await loadUrlPatterns();
-  await saveUrlPatterns(urlPatterns);
+  const config = await loadConfig();
+  await saveConfig(config);
 });
 
 browser.action.onClicked.addListener(async (tab) => {

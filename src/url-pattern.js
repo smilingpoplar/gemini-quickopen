@@ -37,25 +37,47 @@ function urlMatchPatternToRegex(pattern) {
   return patternToRegex(normalized);
 }
 
-function matchRule(currentUrl, urlPatterns) {
-  const specificPatterns = urlPatterns.filter(p => p.urlPattern !== '*');
+function matchUrlToRule(currentUrl, urlPattern) {
+  const patternList = parsePatterns(urlPattern);
+  for (const p of patternList) {
+    const urlPatternRegex = urlMatchPatternToRegex(p);
+    if (urlPatternRegex && urlPatternRegex.test(currentUrl)) return true;
+  }
+  return false;
+}
 
-  for (const rule of specificPatterns) {
-    const patternList = parsePatterns(rule.urlPattern);
-    for (const p of patternList) {
-      const urlPatternRegex = urlMatchPatternToRegex(p);
-      if (urlPatternRegex && urlPatternRegex.test(currentUrl)) return rule;
+function findMatchingGroup(currentUrl, config) {
+  const groups = config?.promptGroups || [];
+  
+  // 先找非默认组，按顺序匹配
+  for (const group of groups) {
+    if (group.isDefault) continue;
+    
+    for (const rule of (group.rules || [])) {
+      if (matchUrlToRule(currentUrl, rule.urlPattern)) {
+        return {
+          prompt: group.prompt,
+          cssSelector: rule.cssSelector || ''
+        };
+      }
     }
   }
-
-  const defaultRule = urlPatterns.find(p => p.urlPattern === '*');
-  if (!defaultRule) return { prompt: DEFAULT_PROMPT, cssSelector: '' };
-  return { ...defaultRule, cssSelector: '' };
+  
+  const defaultGroup = groups.find(g => g.isDefault);
+  if (defaultGroup) {
+    return {
+      prompt: defaultGroup.prompt,
+      cssSelector: defaultGroup.cssSelector || ''
+    };
+  }
+  
+  return { prompt: DEFAULT_PROMPT, cssSelector: '' };
 }
 
 export {
   normalizeUrlPatternInput,
   parsePatterns,
   urlMatchPatternToRegex,
-  matchRule
+  matchUrlToRule,
+  findMatchingGroup
 };

@@ -1,9 +1,11 @@
 import {
-  generateRuleId,
-  isDefaultRule,
-  loadUrlPatterns,
-  saveUrlPatterns
-} from './rule-config.js';
+  generateId,
+  isDefaultGroup,
+  loadConfig,
+  saveConfig,
+  getDefaultGroup,
+  getCustomGroups
+} from './prompt-config.js';
 import { DEFAULT_PROMPT } from '../constants.js';
 
 const rulesContainer = document.getElementById('rulesContainer');
@@ -11,7 +13,7 @@ const addBtn = document.getElementById('addBtn');
 const statusEl = document.getElementById('status');
 
 const state = {
-  urlPatterns: [],
+  config: { promptGroups: [] },
   saveTimeout: null
 };
 
@@ -19,14 +21,6 @@ function showStatus(message) {
   statusEl.textContent = message;
   statusEl.classList.add('show');
   setTimeout(() => statusEl.classList.remove('show'), 1500);
-}
-
-function getDefaultRule() {
-  return state.urlPatterns.find(isDefaultRule);
-}
-
-function getCustomRules() {
-  return state.urlPatterns.filter((rule) => !isDefaultRule(rule));
 }
 
 function escapeHtml(text) {
@@ -38,64 +32,164 @@ function escapeHtml(text) {
 function scheduleSave() {
   clearTimeout(state.saveTimeout);
   state.saveTimeout = setTimeout(async () => {
-    await saveUrlPatterns(state.urlPatterns);
+    await saveConfig(state.config);
     showStatus('已自动保存');
   }, 300);
 }
 
-function updateRuleField(ruleId, field, value) {
-  if (!ruleId || !field) {
-    return;
-  }
+function renderRuleItem(rule, groupId, isDefault) {
+  return `
+    <div class="rule-item ${isDefault ? 'default-rule-item' : ''}" data-rule-id="${rule.id}" data-group-id="${groupId}">
+      <div class="drag-handle">⋮⋮</div>
+      <input type="text" class="url-input ${isDefault ? 'default-url' : ''}" ${isDefault ? 'readonly' : ''} value="${escapeHtml(rule.urlPattern)}" placeholder="${isDefault ? '默认规则，匹配所有网址' : '网址规则，如 github.com/*'}" data-field="urlPattern">
+      <input type="text" class="selector-input ${isDefault ? 'default-selector' : ''}" ${isDefault ? 'readonly' : ''} value="${escapeHtml(rule.cssSelector || '')}" placeholder="CSS选择器（可选）" data-field="cssSelector">
+      ${!isDefault ? '<button class="delete-rule-btn" title="删除规则">×</button>' : '<span class="delete-placeholder"></span>'}
+    </div>
+  `;
+}
 
-  const target = state.urlPatterns.find((rule) => rule.id === ruleId);
-  if (!target) {
-    return;
-  }
+function renderGroup(group) {
+  const isDefault = isDefaultGroup(group);
 
-  target[field] = value;
-  scheduleSave();
+  const rulesHtml = isDefault
+    ? renderRuleItem({ id: 'default', urlPattern: '*', cssSelector: group.cssSelector || '' }, group.id, true)
+    : group.rules.map(rule => renderRuleItem(rule, group.id, false)).join('');
+
+  return `
+    <div class="prompt-group ${isDefault ? 'default-group' : ''}" data-group-id="${group.id}">
+      <div class="group-header">
+        <div class="group-drag-handle">⋮⋮</div>
+        <span class="group-label">${isDefault ? '默认规则组' : '规则组'}</span>
+        ${!isDefault ? `<button class="delete-group-btn" title="删除规则">×</button>` : '<span class="delete-placeholder"></span>'}
+      </div>
+      <div class="group-content">
+        <div class="rules-list">
+          ${rulesHtml}
+          ${!isDefault ? `<button class="add-rule-btn">+ 添加规则</button>` : ''}
+        </div>
+        <div class="prompt-section">
+          <textarea class="prompt-input ${isDefault ? 'default-prompt' : ''}" placeholder="输入 Prompt..." data-field="prompt">${escapeHtml(group.prompt)}</textarea>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderRules() {
-  const customRules = getCustomRules();
-  const defaultRule = getDefaultRule();
+  const customGroups = getCustomGroups(state.config);
+  const defaultGroup = getDefaultGroup(state.config);
 
-  if (customRules.length === 0 && !defaultRule) {
+  if (customGroups.length === 0 && !defaultGroup) {
     rulesContainer.innerHTML = '<div class="empty-state">暂无规则，点击下方添加</div>';
     return;
   }
 
-  const customRuleHtml = customRules.map((rule) => `
-    <div class="rule-item" draggable="true" data-id="${rule.id}">
-      <div class="drag-handle">⋮⋮</div>
-      <div class="urls-area">
-        <textarea class="urls-input" placeholder="网址规则，如 github.com/*" data-field="urlPattern">${escapeHtml(rule.urlPattern)}</textarea>
-        <input type="text" class="selector-input" value="${escapeHtml(rule.cssSelector || '')}" placeholder="可选填写 CSS选择器，如 article" data-field="cssSelector">
-      </div>
-      <span class="arrow">→</span>
-      <input type="text" class="prompt-input" value="${escapeHtml(rule.prompt)}" placeholder="Prompt" data-field="prompt">
-      <button class="delete-btn" title="删除规则">×</button>
-    </div>
-  `).join('');
+  const groupsHtml = [...customGroups, defaultGroup]
+    .filter(Boolean)
+    .map(renderGroup)
+    .join('');
 
-  const defaultRuleHtml = defaultRule ? `
-    <div class="rule-item default-rule">
-      <div class="drag-handle" style="visibility:hidden">⋮⋮</div>
-      <div class="urls-area">
-        <textarea class="urls-input default-urls" readonly placeholder="默认规则，* 匹配所有网址">${escapeHtml(defaultRule.urlPattern)}</textarea>
-      </div>
-      <span class="arrow">→</span>
-      <input type="text" class="prompt-input" value="${escapeHtml(defaultRule.prompt)}" placeholder="默认 Prompt" data-field="prompt" data-default="true">
-      <button class="delete-btn" style="visibility:hidden">×</button>
-    </div>
-  ` : '';
+  rulesContainer.innerHTML = groupsHtml;
+}
 
-  rulesContainer.innerHTML = `${customRuleHtml}${defaultRuleHtml}`;
+function findGroup(groupId) {
+  return state.config.promptGroups.find(g => g.id === groupId);
+}
+
+function findRule(groupId, ruleId) {
+  const group = findGroup(groupId);
+  return group?.rules.find(r => r.id === ruleId);
+}
+
+function updateGroupField(groupId, field, value) {
+  const group = findGroup(groupId);
+  if (group) {
+    group[field] = value;
+    scheduleSave();
+  }
+}
+
+function updateRuleField(groupId, ruleId, field, value) {
+  const rule = findRule(groupId, ruleId);
+  if (rule) {
+    rule[field] = value;
+    scheduleSave();
+  }
+}
+
+function addGroup() {
+  state.config.promptGroups.unshift({
+    id: generateId(),
+    prompt: DEFAULT_PROMPT,
+    isDefault: false,
+    rules: [
+      { id: generateId(), urlPattern: '', cssSelector: '' }
+    ]
+  });
+  renderRules();
+  scheduleSave();
+
+  setTimeout(() => {
+    const firstUrlInput = rulesContainer.querySelector('.prompt-group:not(.default-group) .url-input');
+    if (firstUrlInput) {
+      firstUrlInput.focus();
+    }
+  }, 50);
+}
+
+function deleteGroup(groupId) {
+  const group = findGroup(groupId);
+  if (!group || isDefaultGroup(group)) {
+    showStatus('默认规则不能删除');
+    return;
+  }
+
+  if (!confirm('确定删除这个规则组？')) {
+    return;
+  }
+
+  state.config.promptGroups = state.config.promptGroups.filter(g => g.id !== groupId);
+  renderRules();
+  scheduleSave();
+  showStatus('已删除');
+}
+
+function addRuleToGroup(groupId) {
+  const group = findGroup(groupId);
+  if (!group || isDefaultGroup(group)) return;
+
+  group.rules.push({
+    id: generateId(),
+    urlPattern: '',
+    cssSelector: ''
+  });
+  renderRules();
+  scheduleSave();
+
+  setTimeout(() => {
+    const groupEl = rulesContainer.querySelector(`[data-group-id="${groupId}"]`);
+    if (groupEl) {
+      const urlInputs = groupEl.querySelectorAll('.url-input');
+      const lastInput = urlInputs[urlInputs.length - 1];
+      if (lastInput) {
+        lastInput.focus();
+      }
+    }
+  }, 50);
+}
+
+function deleteRule(groupId, ruleId) {
+  const group = findGroup(groupId);
+  if (!group || isDefaultGroup(group)) return;
+
+  group.rules = group.rules.filter(r => r.id !== ruleId);
+  renderRules();
+  scheduleSave();
+  showStatus('已删除');
 }
 
 function getDragAfterElement(container, y) {
-  const draggableElements = [...container.querySelectorAll('.rule-item:not(.dragging):not(.default-rule)')];
+  const draggableElements = [...container.querySelectorAll('.prompt-group:not(.dragging)')];
 
   return draggableElements.reduce((closest, child) => {
     const box = child.getBoundingClientRect();
@@ -107,68 +201,20 @@ function getDragAfterElement(container, y) {
   }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-function reorderRulesByDom() {
-  const defaultRule = getDefaultRule();
-  const customRules = [];
-
-  rulesContainer.querySelectorAll('.rule-item[data-id]').forEach((item) => {
-    const id = item.dataset.id;
-    const matched = state.urlPatterns.find((rule) => rule.id === id);
-    if (matched && !isDefaultRule(matched)) {
-      customRules.push(matched);
+function reorderGroupsByDom() {
+  const newOrder = [];
+  rulesContainer.querySelectorAll('.prompt-group[data-group-id]').forEach((el) => {
+    const groupId = el.dataset.groupId;
+    const group = findGroup(groupId);
+    if (group) {
+      newOrder.push(group);
     }
   });
-
-  state.urlPatterns = defaultRule ? [...customRules, defaultRule] : customRules;
-}
-
-function deleteRule(ruleId) {
-  const target = state.urlPatterns.find((rule) => rule.id === ruleId);
-  if (!target) {
-    return;
-  }
-
-  if (isDefaultRule(target)) {
-    showStatus('默认规则不能删除');
-    return;
-  }
-
-  if (!confirm('确定删除这条规则？')) {
-    return;
-  }
-
-  state.urlPatterns = state.urlPatterns.filter((rule) => rule.id !== ruleId);
-  renderRules();
-  scheduleSave();
-  showStatus('已删除');
-}
-
-function addRule() {
-  const defaultRule = getDefaultRule();
-  const customRules = getCustomRules();
-
-  customRules.push({
-    id: generateRuleId(),
-    urlPattern: '',
-    cssSelector: '',
-    prompt: DEFAULT_PROMPT
-  });
-
-  state.urlPatterns = defaultRule ? [...customRules, defaultRule] : customRules;
-  renderRules();
-  scheduleSave();
-
-  setTimeout(() => {
-    const inputs = rulesContainer.querySelectorAll('.urls-input:not([readonly])');
-    const lastInput = inputs[inputs.length - 1];
-    if (lastInput) {
-      lastInput.focus();
-    }
-  }, 50);
+  state.config.promptGroups = newOrder;
 }
 
 function bindEvents() {
-  addBtn.addEventListener('click', addRule);
+  addBtn.addEventListener('click', addGroup);
 
   rulesContainer.addEventListener('input', (event) => {
     const target = event.target;
@@ -178,43 +224,72 @@ function bindEvents() {
 
     const field = target.dataset.field;
     const ruleItem = target.closest('.rule-item');
-    if (!ruleItem) {
+    const groupEl = target.closest('.prompt-group');
+
+    if (!groupEl) return;
+
+    const groupId = groupEl.dataset.groupId;
+    const group = findGroup(groupId);
+
+    if (target.classList.contains('prompt-input')) {
+      updateGroupField(groupId, 'prompt', target.value);
       return;
     }
 
-    if (target.dataset.default === 'true') {
-      const defaultRule = getDefaultRule();
-      if (defaultRule) {
-        defaultRule.prompt = target.value;
+    if (ruleItem) {
+      const ruleId = ruleItem.dataset.ruleId;
+      if (group?.isDefault && field === 'cssSelector') {
+        group.cssSelector = target.value;
         scheduleSave();
+        return;
       }
-      return;
+      updateRuleField(groupId, ruleId, field, target.value);
     }
-
-    updateRuleField(ruleItem.dataset.id, field, target.value);
   });
 
   rulesContainer.addEventListener('click', (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLElement) || !target.classList.contains('delete-btn')) {
+    if (!(target instanceof HTMLElement)) return;
+
+    if (target.classList.contains('delete-group-btn')) {
+      const groupEl = target.closest('.prompt-group');
+      if (groupEl?.dataset.groupId) {
+        deleteGroup(groupEl.dataset.groupId);
+      }
       return;
     }
 
-    const ruleItem = target.closest('.rule-item');
-    if (!ruleItem?.dataset.id) {
+    if (target.classList.contains('delete-rule-btn')) {
+      const ruleItem = target.closest('.rule-item');
+      const groupEl = target.closest('.prompt-group');
+      if (ruleItem?.dataset.ruleId && groupEl?.dataset.groupId) {
+        deleteRule(groupEl.dataset.groupId, ruleItem.dataset.ruleId);
+      }
       return;
     }
 
-    deleteRule(ruleItem.dataset.id);
+    if (target.classList.contains('add-rule-btn')) {
+      const groupEl = target.closest('.prompt-group');
+      if (groupEl?.dataset.groupId) {
+        addRuleToGroup(groupEl.dataset.groupId);
+      }
+    }
   });
+
+  let draggedGroup = null;
 
   rulesContainer.addEventListener('dragstart', (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLElement) || !target.matches('.rule-item[draggable="true"]')) {
-      return;
-    }
+    if (!(target instanceof HTMLElement)) return;
 
-    target.classList.add('dragging');
+    const groupEl = target.closest('.prompt-group');
+    if (!groupEl) return;
+
+    const isGroupDrag = target.classList.contains('group-drag-handle');
+    if (!isGroupDrag) return;
+
+    draggedGroup = groupEl;
+    groupEl.classList.add('dragging');
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
     }
@@ -222,45 +297,39 @@ function bindEvents() {
 
   rulesContainer.addEventListener('dragend', (event) => {
     const target = event.target;
-    if (!(target instanceof HTMLElement) || !target.matches('.rule-item[draggable="true"]')) {
-      return;
-    }
+    if (!(target instanceof HTMLElement)) return;
 
-    target.classList.remove('dragging');
+    const groupEl = target.closest('.prompt-group');
+    if (groupEl) {
+      groupEl.classList.remove('dragging');
+    }
+    draggedGroup = null;
   });
 
   rulesContainer.addEventListener('dragover', (event) => {
     event.preventDefault();
-
-    const dragging = rulesContainer.querySelector('.rule-item.dragging');
-    if (!dragging) {
-      return;
-    }
+    if (!draggedGroup) return;
 
     const afterElement = getDragAfterElement(rulesContainer, event.clientY);
-    if (!afterElement) {
-      const defaultRuleItem = rulesContainer.querySelector('.rule-item.default-rule');
-      if (defaultRuleItem) {
-        rulesContainer.insertBefore(dragging, defaultRuleItem);
-      } else {
-        rulesContainer.appendChild(dragging);
-      }
-      return;
+    if (afterElement) {
+      rulesContainer.insertBefore(draggedGroup, afterElement);
+    } else {
+      rulesContainer.appendChild(draggedGroup);
     }
-
-    rulesContainer.insertBefore(dragging, afterElement);
   });
 
   rulesContainer.addEventListener('drop', () => {
-    reorderRulesByDom();
-    renderRules();
-    scheduleSave();
-    showStatus('顺序已更新');
+    if (draggedGroup) {
+      reorderGroupsByDom();
+      renderRules();
+      scheduleSave();
+      showStatus('顺序已更新');
+    }
   });
 }
 
 async function loadSettings() {
-  state.urlPatterns = await loadUrlPatterns();
+  state.config = await loadConfig();
   renderRules();
 }
 
