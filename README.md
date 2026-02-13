@@ -50,13 +50,18 @@ npm run build:firefox
 ```text
 .
 ├── manifest.json      # 统一清单（含 extension.js 浏览器前缀字段）
-├── background.js
-├── content.js
-├── options/
-│   ├── options.html
-│   ├── options.css
-│   ├── options.js
-│   └── rule-config.js
+├── src/               # 扩展源代码
+│   ├── background.js
+│   ├── content.js
+│   ├── constants.js
+│   ├── url-pattern.js
+│   └── options/
+│       ├── options.html
+│       ├── options.css
+│       ├── options.js
+│       └── rule-config.js
+├── tools/             # 开发工具脚本（避免用 scripts/ 名称）
+│   └── generate-icons.js
 ├── icons/
 └── dist/              # extension.js 构建产物
 ```

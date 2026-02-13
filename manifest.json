@@ -21,11 +21,11 @@
     }
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background.js"
   },
   "firefox:background": {
     "scripts": [
-      "background.js"
+      "src/background.js"
     ]
   },
   "content_scripts": [
@@ -34,12 +34,12 @@
         "https://gemini.google.com/*"
       ],
       "js": [
-        "content.js"
+        "src/content.js"
       ],
       "run_at": "document_start"
     }
   ],
-  "options_page": "options/options.html",
+  "options_page": "src/options/options.html",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",

@@ -5,7 +5,7 @@ import { createCanvas, loadImage } from 'canvas';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const iconsDir = path.join(__dirname, 'icons');
+const iconsDir = path.join(__dirname, '..', 'icons');
 if (!fs.existsSync(iconsDir)) {
   fs.mkdirSync(iconsDir);
 }

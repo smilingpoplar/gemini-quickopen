@@ -5,8 +5,8 @@ import {
   normalizeUrlPatternInput,
   urlMatchPatternToRegex,
   matchRule
-} from '../url-pattern.js';
-import { DEFAULT_PROMPT } from '../constants.js';
+} from '../src/url-pattern.js';
+import { DEFAULT_PROMPT } from '../src/constants.js';
 
 test('normalizeUrlPatternInput should auto-complete bare domains', () => {
   assert.equal(normalizeUrlPatternInput('github.com'), '*://github.com/*');

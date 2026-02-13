@@ -76,7 +76,7 @@ test('click action should use matched configured prompt for wallstreetcn livenew
   globalThis.browser = mock.browser;
   globalThis.chrome = undefined;
 
-  await import(`../background.js?test_click=${Date.now()}`);
+  await import(`../src/background.js?test_click=${Date.now()}`);
 
   assert.equal(typeof mock.events.onClicked, 'function');
   await mock.events.onClicked({ id: 1 });
