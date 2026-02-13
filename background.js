@@ -70,3 +70,5 @@ browserAPI.commands.onCommand.addListener(async (command) => {
     await openGeminiWithCurrentTab();
   }
 });
+
+export {};

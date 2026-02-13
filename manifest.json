@@ -22,10 +22,19 @@
   "background": {
     "service_worker": "background.js"
   },
+  "firefox:background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
   "content_scripts": [
     {
-      "matches": ["https://gemini.google.com/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://gemini.google.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_start"
     }
   ],
@@ -39,6 +48,12 @@
   "commands": {
     "open-gemini": {
       "description": "在 Gemini 中打开当前页面"
+    }
+  },
+  "firefox:browser_specific_settings": {
+    "gecko": {
+      "id": "gemini-url@quickopen",
+      "strict_min_version": "128.0"
     }
   }
 }

@@ -240,3 +240,5 @@ function addRule() {
 addBtn.addEventListener('click', addRule);
 
 document.addEventListener('DOMContentLoaded', loadSettings);
+
+export {};

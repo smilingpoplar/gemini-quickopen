@@ -1,7 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-const { createCanvas, loadImage } = require('canvas');
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createCanvas, loadImage } from 'canvas';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const iconsDir = path.join(__dirname, 'icons');
 if (!fs.existsSync(iconsDir)) {
   fs.mkdirSync(iconsDir);
