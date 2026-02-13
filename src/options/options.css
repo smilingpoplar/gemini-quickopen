@@ -61,7 +61,18 @@ h1 {
   background: #e3f2fd;
 }
 
+.default-group .delete-group-btn,
+.default-group .add-rule-btn {
+  display: none;
+}
 
+.default-group .group-drag-handle {
+  visibility: hidden;
+}
+
+.default-group[draggable="true"] {
+  pointer-events: none;
+}
 
 /* 组头部 */
 .group-header {
@@ -117,6 +128,15 @@ h1 {
   background: #fafafa;
   border-radius: 8px;
   border: 1px solid #eee;
+}
+
+.default-rule-item .delete-rule-btn,
+.default-rule-item .drag-handle {
+  visibility: hidden;
+}
+
+.default-rule-item {
+  pointer-events: none;
 }
 
 .rule-item:hover {

@@ -38,37 +38,39 @@ function scheduleSave() {
 }
 
 function renderRuleItem(rule, groupId, isDefault) {
+  const defaultClass = isDefault ? 'default-rule-item' : '';
   return `
-    <div class="rule-item ${isDefault ? 'default-rule-item' : ''}" data-rule-id="${rule.id}" data-group-id="${groupId}">
-      <div class="drag-handle">⋮⋮</div>
-      <input type="text" class="url-input ${isDefault ? 'default-url' : ''}" ${isDefault ? 'readonly' : ''} value="${escapeHtml(rule.urlPattern)}" placeholder="${isDefault ? '默认规则，匹配所有网址' : '网址规则，如 github.com/*'}" data-field="urlPattern">
-      <input type="text" class="selector-input ${isDefault ? 'default-selector' : ''}" ${isDefault ? 'readonly' : ''} value="${escapeHtml(rule.cssSelector || '')}" placeholder="CSS选择器（可选）" data-field="cssSelector">
-      ${!isDefault ? '<button class="delete-rule-btn" title="删除规则">×</button>' : '<span class="delete-placeholder"></span>'}
+    <div class="rule-item ${defaultClass}" draggable="true" data-rule-id="${rule.id}" data-group-id="${groupId}">
+      <div class="drag-handle" draggable="true">⋮⋮</div>
+      <input type="text" class="url-input ${defaultClass}" readonly value="${escapeHtml(rule.urlPattern)}" placeholder="${isDefault ? '默认规则，匹配所有网址' : '网址规则，如 github.com/*'}" data-field="urlPattern">
+      <input type="text" class="selector-input ${defaultClass}" readonly value="${escapeHtml(rule.cssSelector || '')}" placeholder="CSS选择器（可选）" data-field="cssSelector">
+      <button class="delete-rule-btn" title="删除规则">×</button>
     </div>
   `;
 }
 
 function renderGroup(group) {
   const isDefault = isDefaultGroup(group);
+  const defaultClass = isDefault ? 'default-group' : '';
 
   const rulesHtml = isDefault
     ? renderRuleItem({ id: 'default', urlPattern: '*', cssSelector: group.cssSelector || '' }, group.id, true)
     : group.rules.map(rule => renderRuleItem(rule, group.id, false)).join('');
 
   return `
-    <div class="prompt-group ${isDefault ? 'default-group' : ''}" data-group-id="${group.id}">
+    <div class="prompt-group ${defaultClass}" draggable="true" data-group-id="${group.id}">
       <div class="group-header">
-        <div class="group-drag-handle">⋮⋮</div>
+        <div class="group-drag-handle" draggable="true">⋮⋮</div>
         <span class="group-label">${isDefault ? '默认规则组' : '规则组'}</span>
-        ${!isDefault ? `<button class="delete-group-btn" title="删除规则">×</button>` : '<span class="delete-placeholder"></span>'}
+        <button class="delete-group-btn" title="删除规则">×</button>
       </div>
       <div class="group-content">
         <div class="rules-list">
           ${rulesHtml}
-          ${!isDefault ? `<button class="add-rule-btn">+ 添加规则</button>` : ''}
+          <button class="add-rule-btn">+ 添加规则</button>
         </div>
         <div class="prompt-section">
-          <textarea class="prompt-input ${isDefault ? 'default-prompt' : ''}" placeholder="输入 Prompt..." data-field="prompt">${escapeHtml(group.prompt)}</textarea>
+          <textarea class="prompt-input" placeholder="输入 Prompt..." data-field="prompt">${escapeHtml(group.prompt)}</textarea>
         </div>
       </div>
     </div>
@@ -277,13 +279,27 @@ function bindEvents() {
   });
 
   let draggedGroup = null;
+  let draggedRule = null;
 
   rulesContainer.addEventListener('dragstart', (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
 
-    const groupEl = target.closest('.prompt-group');
+    const ruleEl = target.closest('.rule-item[draggable="true"]');
+    if (ruleEl) {
+      if (ruleEl.classList.contains('default-rule-item')) return;
+      draggedRule = ruleEl;
+      ruleEl.classList.add('dragging');
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+      }
+      return;
+    }
+
+    const groupEl = target.closest('.prompt-group[draggable="true"]');
     if (!groupEl) return;
+
+    if (groupEl.classList.contains('default-group')) return;
 
     const isGroupDrag = target.classList.contains('group-drag-handle');
     if (!isGroupDrag) return;
@@ -299,6 +315,13 @@ function bindEvents() {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
 
+    const ruleEl = target.closest('.rule-item[draggable="true"]');
+    if (ruleEl) {
+      ruleEl.classList.remove('dragging');
+      draggedRule = null;
+      return;
+    }
+
     const groupEl = target.closest('.prompt-group');
     if (groupEl) {
       groupEl.classList.remove('dragging');
@@ -308,6 +331,32 @@ function bindEvents() {
 
   rulesContainer.addEventListener('dragover', (event) => {
     event.preventDefault();
+
+    if (draggedRule) {
+      const rulesList = draggedRule.closest('.rules-list');
+      if (!rulesList) return;
+
+      const ruleItems = [...rulesList.querySelectorAll('.rule-item:not(.dragging)')];
+      const afterElement = ruleItems.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = event.clientY - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset, element: child };
+        }
+        return closest;
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+
+      const addRuleBtn = rulesList.querySelector('.add-rule-btn');
+      if (afterElement) {
+        rulesList.insertBefore(draggedRule, afterElement);
+      } else if (addRuleBtn) {
+        rulesList.insertBefore(draggedRule, addRuleBtn);
+      } else {
+        rulesList.appendChild(draggedRule);
+      }
+      return;
+    }
+
     if (!draggedGroup) return;
 
     const afterElement = getDragAfterElement(rulesContainer, event.clientY);
@@ -319,6 +368,28 @@ function bindEvents() {
   });
 
   rulesContainer.addEventListener('drop', () => {
+    if (draggedRule) {
+      const groupEl = draggedRule.closest('.prompt-group');
+      if (groupEl) {
+        const groupId = groupEl.dataset.groupId;
+        const group = findGroup(groupId);
+        if (group) {
+          const newOrder = [];
+          groupEl.querySelectorAll('.rule-item[data-rule-id]').forEach((el) => {
+            const ruleId = el.dataset.ruleId;
+            const rule = group.rules.find(r => r.id === ruleId);
+            if (rule) {
+              newOrder.push(rule);
+            }
+          });
+          group.rules = newOrder;
+          scheduleSave();
+          showStatus('顺序已更新');
+        }
+      }
+      return;
+    }
+
     if (draggedGroup) {
       reorderGroupsByDom();
       renderRules();
