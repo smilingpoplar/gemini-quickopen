@@ -5,7 +5,8 @@
   "description": "点击插件图标，将当前网页 URL 发送到 Gemini 进行分析",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "scripting"
   ],
   "host_permissions": [
     "https://gemini.google.com/*"

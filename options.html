@@ -108,10 +108,13 @@
       visibility: hidden;
     }
 
-    /* 网址区域 */
+    /* 网址和 selector 区域 */
     .urls-area {
       flex: 1;
       min-width: 250px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     .urls-input {
@@ -140,6 +143,26 @@
     .rule-item.default-rule .urls-input {
       background: #fffde7;
       font-weight: 500;
+    }
+
+    .selector-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: monospace;
+      background: #fafafa;
+    }
+
+    .selector-input:focus {
+      outline: none;
+      border-color: #667eea;
+      background: #fff;
+    }
+
+    .selector-input::placeholder {
+      color: #bbb;
     }
 
     /* 箭头 */
@@ -254,7 +277,7 @@
   <div class="container">
     <h1>⚙️ 插件设置</h1>
     <p class="subtitle">配置不同网址的 Prompt，按顺序匹配规则</p>
-    <p class="hint">提示：一行一个网址规则，可多行</p>
+    <p class="hint">提示：网址规则一行一个；可选填写 CSS selector，用于提取页面文本后再发送</p>
 
     <div class="rules-container" id="rulesContainer">
       <!-- 规则列表 -->

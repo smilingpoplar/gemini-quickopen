@@ -70,7 +70,7 @@ npm run build:firefox
 
 - 点击工具栏图标：打开 Gemini 并携带 `当前 URL + 匹配到的 Prompt`
 - 快捷键命令：`open-gemini`
-- 选项页：按顺序配置 URL 规则（支持通配符 `*`），支持默认规则
+- 选项页：按顺序配置 URL 规则（支持通用 URL 匹配模式；也支持直接写域名如 `github.com`，会自动按 `*://github.com/*` 匹配），支持默认规则
 
 ## 许可证
 

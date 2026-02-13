@@ -23,10 +23,6 @@ function isDefaultRule(pattern) {
   return pattern.urlPattern === '*';
 }
 
-function parsePatterns(text) {
-  return text.split('\n').map(p => p.trim()).filter(Boolean);
-}
-
 function autoSave() {
   clearTimeout(saveTimeout);
   saveTimeout = setTimeout(() => {
@@ -38,11 +34,19 @@ function autoSave() {
 
 function loadSettings() {
   browserAPI.storage.sync.get(['urlPatterns'], (result) => {
-    urlPatterns = result.urlPatterns || [];
+    urlPatterns = (result.urlPatterns || []).map((pattern) => ({
+      ...pattern,
+      cssSelector: isDefaultRule(pattern) ? '' : (pattern.cssSelector || '')
+    }));
 
     // 确保有默认规则
     if (!urlPatterns.some(p => p.urlPattern === '*')) {
-      urlPatterns.push({ id: generateId(), urlPattern: '*', prompt: DEFAULT_PROMPT });
+      urlPatterns.push({
+        id: generateId(),
+        urlPattern: '*',
+        cssSelector: '',
+        prompt: DEFAULT_PROMPT
+      });
     }
 
     renderRules();
@@ -62,12 +66,12 @@ function renderRules() {
 
   // 非默认规则
   rules.forEach((pattern, index) => {
-    const patterns = parsePatterns(pattern.urlPattern);
     html += `
       <div class="rule-item" draggable="true" data-id="${pattern.id}">
         <div class="drag-handle">⋮⋮</div>
         <div class="urls-area">
-          <textarea class="urls-input" placeholder="github.com/*&#10;youtube.com/*" data-field="urlPattern">${escapeHtml(pattern.urlPattern)}</textarea>
+          <textarea class="urls-input" placeholder="github.com&#10;*.youtube.com" data-field="urlPattern">${escapeHtml(pattern.urlPattern)}</textarea>
+          <input type="text" class="selector-input" value="${escapeHtml(pattern.cssSelector || '')}" placeholder="可选 CSS selector，例如 article h1" data-field="cssSelector">
         </div>
         <span class="arrow">→</span>
         <input type="text" class="prompt-input" value="${escapeHtml(pattern.prompt)}" placeholder="Prompt" data-field="prompt">
@@ -78,7 +82,6 @@ function renderRules() {
 
   // 默认规则（固定最后，不可拖拽）
   if (defaultRule) {
-    const patterns = parsePatterns(defaultRule.urlPattern);
     html += `
       <div class="rule-item default-rule">
         <div class="drag-handle" style="visibility:hidden">⋮⋮</div>
@@ -221,7 +224,7 @@ function addRule() {
   const defaultRule = urlPatterns.find(p => isDefaultRule(p));
   const rules = urlPatterns.filter(p => !isDefaultRule(p));
 
-  rules.push({ id: generateId(), urlPattern: '', prompt: DEFAULT_PROMPT });
+  rules.push({ id: generateId(), urlPattern: '', cssSelector: '', prompt: DEFAULT_PROMPT });
 
   urlPatterns = [...rules];
   if (defaultRule) urlPatterns.push(defaultRule);

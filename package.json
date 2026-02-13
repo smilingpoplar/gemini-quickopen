@@ -9,7 +9,7 @@
     "build": "npm run build:chrome && npm run build:firefox",
     "build:chrome": "extension build --browser=chrome --zip",
     "build:firefox": "extension build --browser=firefox --zip",
-    "test": "echo \"No tests configured\""
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
@@ -18,5 +18,8 @@
   "devDependencies": {
     "canvas": "^3.2.1",
     "extension": "^3.5.1"
+  },
+  "dependencies": {
+    "webext-patterns": "^1.5.1"
   }
 }
