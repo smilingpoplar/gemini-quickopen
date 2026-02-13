@@ -42,7 +42,7 @@ test('urlMatchPatternToRegex should return null for invalid pattern', () => {
 
 test('findMatchingGroup should return first matched group by order', () => {
   const config = {
-    promptGroups: [
+    ruleGroups: [
       {
         id: '1',
         prompt: 'rule-1',
@@ -75,7 +75,7 @@ test('findMatchingGroup should return first matched group by order', () => {
 
 test('findMatchingGroup should fallback to default group', () => {
   const config = {
-    promptGroups: [
+    ruleGroups: [
       {
         id: '1',
         prompt: 'rule-1',
@@ -100,7 +100,7 @@ test('findMatchingGroup should fallback to default group', () => {
 
 test('findMatchingGroup should fallback to hardcoded default when no default group', () => {
   const config = {
-    promptGroups: [
+    ruleGroups: [
       {
         id: '1',
         prompt: 'rule-1',

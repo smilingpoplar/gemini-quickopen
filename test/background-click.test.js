@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-function createMockBrowser({ currentUrl, promptConfig }) {
+function createMockBrowser({ currentUrl, ruleConfig }) {
   const events = {
     onInstalled: null,
     onClicked: null,
@@ -12,7 +12,7 @@ function createMockBrowser({ currentUrl, promptConfig }) {
 
   const storageSync = {
     get(keys, callback) {
-      const result = { promptConfig };
+      const result = { ruleConfig };
       if (typeof callback === 'function') {
         callback(result);
         return;
@@ -74,8 +74,8 @@ function createMockBrowser({ currentUrl, promptConfig }) {
 test('click action should use matched configured prompt for wallstreetcn livenews page', async () => {
   const mock = createMockBrowser({
     currentUrl: 'https://wallstreetcn.com/livenews/3055332',
-    promptConfig: {
-      promptGroups: [
+    ruleConfig: {
+      ruleGroups: [
         {
           id: '1',
           prompt: '按我的配置总结要点',

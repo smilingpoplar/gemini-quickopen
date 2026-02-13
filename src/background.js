@@ -1,6 +1,6 @@
 import { DEFAULT_PROMPT } from './constants.js';
 import { findMatchingGroup } from './url-pattern.js';
-import { loadConfig, saveConfig } from './options/prompt-config.js';
+import { loadConfig, saveConfig } from './options/config-storage.js';
 
 function normalizeContentText(text) {
   return (text || '').replace(/\s+/g, ' ').trim();

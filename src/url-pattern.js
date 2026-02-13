@@ -47,7 +47,7 @@ function matchUrlToRule(currentUrl, urlPattern) {
 }
 
 function findMatchingGroup(currentUrl, config) {
-  const groups = config?.promptGroups || [];
+  const groups = config?.ruleGroups || [];
   
   // 先找非默认组，按顺序匹配
   for (const group of groups) {

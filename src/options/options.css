@@ -61,17 +61,13 @@ h1 {
   background: #e3f2fd;
 }
 
-.default-group .delete-group-btn,
-.default-group .add-rule-btn {
-  display: none;
+.default-group {
+  border-color: #e8e8e8;
+  background: #fafafa;
 }
 
-.default-group .group-drag-handle {
-  visibility: hidden;
-}
-
-.default-group[draggable="true"] {
-  pointer-events: none;
+.default-group .group-content {
+  padding-top: 16px;
 }
 
 /* 组头部 */

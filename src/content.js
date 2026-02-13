@@ -55,8 +55,12 @@ async function runAutoSubmit(query) {
   }
 }
 
-browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'GEMINI_QUERY') {
-    void runAutoSubmit(message.queryText);
-  }
-});
+function main() {
+  browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'GEMINI_QUERY') {
+      void runAutoSubmit(message.queryText);
+    }
+  });
+}
+
+export default main;

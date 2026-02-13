@@ -7,20 +7,7 @@
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <div class="container">
-    <h1>⚙️ 插件设置</h1>
-    <p class="subtitle">配置不同网址的prompt，按顺序匹配规则</p>
-    <p class="hint">提示：每个规则组包含一个Prompt和多个网址规则（每个规则可选CSS选择器）；按规则组顺序匹配</p>
-
-    <div class="rules-container" id="rulesContainer">
-      <!-- 规则列表 -->
-    </div>
-
-    <button class="add-btn" id="addBtn">+ 添加规则组</button>
-  </div>
-
-  <div class="status" id="status"></div>
-
-  <script type="module" src="options.js"></script>
+  <div id="root"></div>
+  <script type="module" src="index.jsx"></script>
 </body>
 </html>
