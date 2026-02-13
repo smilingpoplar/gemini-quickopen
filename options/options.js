@@ -4,7 +4,7 @@ import {
   loadUrlPatterns,
   saveUrlPatterns
 } from './rule-config.js';
-import { DEFAULT_PROMPT } from './constants.js';
+import { DEFAULT_PROMPT } from '../constants.js';
 
 const rulesContainer = document.getElementById('rulesContainer');
 const addBtn = document.getElementById('addBtn');
@@ -70,8 +70,8 @@ function renderRules() {
     <div class="rule-item" draggable="true" data-id="${rule.id}">
       <div class="drag-handle">⋮⋮</div>
       <div class="urls-area">
-        <textarea class="urls-input" placeholder="github.com&#10;*.youtube.com" data-field="urlPattern">${escapeHtml(rule.urlPattern)}</textarea>
-        <input type="text" class="selector-input" value="${escapeHtml(rule.cssSelector || '')}" placeholder="可选 CSS selector，例如 article h1" data-field="cssSelector">
+        <textarea class="urls-input" placeholder="网址规则，如 github.com/*" data-field="urlPattern">${escapeHtml(rule.urlPattern)}</textarea>
+        <input type="text" class="selector-input" value="${escapeHtml(rule.cssSelector || '')}" placeholder="可选填写 CSS选择器，如 article" data-field="cssSelector">
       </div>
       <span class="arrow">→</span>
       <input type="text" class="prompt-input" value="${escapeHtml(rule.prompt)}" placeholder="Prompt" data-field="prompt">

@@ -1,6 +1,6 @@
 import { DEFAULT_PROMPT } from './constants.js';
 import { matchRule } from './url-pattern.js';
-import { loadUrlPatterns, saveUrlPatterns } from './rule-config.js';
+import { loadUrlPatterns, saveUrlPatterns } from './options/rule-config.js';
 
 function normalizeContentText(text) {
   return (text || '').replace(/\s+/g, ' ').trim();
