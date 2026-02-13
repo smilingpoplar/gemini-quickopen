@@ -66,8 +66,25 @@ async function openGeminiWithTab(tab) {
   const urlPatterns = await loadUrlPatterns();
   const matchedRule = matchRule(currentUrl, urlPatterns);
   const queryText = await buildGeminiQueryText(currentUrl, tabId, matchedRule);
-  const geminiUrl = `https://gemini.google.com/app?q=${encodeURIComponent(queryText)}`;
-  await browser.tabs.create({ url: geminiUrl });
+
+  const geminiUrl = 'https://gemini.google.com/app';
+  const newTab = await browser.tabs.create({ url: geminiUrl });
+
+  const sendQueryToContentScript = async (attempt = 1) => {
+    try {
+      await browser.tabs.sendMessage(newTab.id, {
+        type: 'GEMINI_QUERY',
+        queryText
+      });
+    } catch (error) {
+      if (attempt < 10) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await sendQueryToContentScript(attempt + 1);
+      }
+    }
+  };
+
+  await sendQueryToContentScript();
 }
 
 async function openGeminiWithCurrentTab() {

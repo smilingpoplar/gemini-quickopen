@@ -1,7 +1,5 @@
 'use strict';
 
-let hasStarted = false;
-
 const waitForElement = (selector, timeout = 10000) => {
   return new Promise((resolve, reject) => {
     const elem = document.querySelector(selector);
@@ -28,16 +26,6 @@ const waitForElement = (selector, timeout = 10000) => {
 
 const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
-const getQuery = () => {
-  const url = new URL(window.location.href);
-  const q = url.searchParams.get('q');
-  if (q) {
-    url.searchParams.delete('q');
-    window.history.replaceState({}, '', url.toString());
-  }
-  return q;
-};
-
 const simulateInput = (elem, value) => {
   elem.textContent = value;
   elem.dispatchEvent(new InputEvent('input', { bubbles: true }));
@@ -51,8 +39,7 @@ const simulateEnter = (elem) => {
   }));
 };
 
-async function runAutoSubmit() {
-  const query = getQuery();
+async function runAutoSubmit(query) {
   if (!query) return;
 
   try {
@@ -68,11 +55,8 @@ async function runAutoSubmit() {
   }
 }
 
-export default function main() {
-  if (hasStarted) return () => {};
-  hasStarted = true;
-  void runAutoSubmit();
-  return () => {
-    hasStarted = false;
-  };
-}
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'GEMINI_QUERY') {
+    void runAutoSubmit(message.queryText);
+  }
+});

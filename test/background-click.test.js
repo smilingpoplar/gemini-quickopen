@@ -8,6 +8,7 @@ function createMockBrowser({ currentUrl, urlPatterns }) {
     onCommand: null
   };
   const createdTabs = [];
+  const sentMessages = [];
 
   const storageSync = {
     get(keys, callback) {
@@ -54,13 +55,19 @@ function createMockBrowser({ currentUrl, urlPatterns }) {
           return Promise.resolve([{ id: 1, url: currentUrl }]);
         },
         create(payload) {
-          createdTabs.push(payload);
-          return Promise.resolve(payload);
+          const tab = { id: Date.now(), ...payload };
+          createdTabs.push(tab);
+          return Promise.resolve(tab);
+        },
+        sendMessage(tabId, message) {
+          sentMessages.push({ tabId, message });
+          return Promise.resolve();
         }
       }
     },
     events,
-    createdTabs
+    createdTabs,
+    sentMessages
   };
 }
 
@@ -83,10 +90,12 @@ test('click action should use matched configured prompt for wallstreetcn livenew
 
   assert.equal(mock.createdTabs.length, 1);
   const geminiUrl = new URL(mock.createdTabs[0].url);
-  const query = decodeURIComponent(geminiUrl.searchParams.get('q'));
 
+  assert.equal(geminiUrl.searchParams.get('q'), null);
+  assert.equal(mock.sentMessages.length, 1);
+  assert.equal(mock.sentMessages[0].message.type, 'GEMINI_QUERY');
   assert.equal(
-    query,
+    mock.sentMessages[0].message.queryText,
     'https://wallstreetcn.com/livenews/3055332\n按我的配置总结要点'
   );
 
