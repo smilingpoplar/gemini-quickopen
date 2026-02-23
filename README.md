@@ -1,87 +1,33 @@
 # Gemini URL 快捷打开
 
-一个支持 Chrome/Firefox 的浏览器扩展：点击图标即可把当前页面 URL 发送到 Gemini，并按 URL 规则附加自定义 Prompt。
+- 点击工具栏图标 → 将当前网页发送给Gemini分析
+- 在插件选项中，添加Prompt提示词、URL规则、CSS选择器（可选）。CSS选择器为空时发送URL，非空则抽取文本发送。
 
-## 技术栈
-
-- Manifest V3
-- [extension.js](https://github.com/extension-js/extension.js)（统一开发/构建）
-
-## 开发与构建
-
-安装依赖：
+## 安装
 
 ```bash
+git clone https://github.com/smilingpoplar/gemini-url-quickopen.git
+cd gemini-url-quickopen
 npm install
-```
-
-本地开发（默认 Chrome）：
-
-```bash
-npm run dev
-```
-
-指定 Firefox 开发：
-
-```bash
-npx extension dev --browser=firefox --polyfill
-```
-
-构建两个浏览器：
-
-```bash
 npm run build
 ```
 
-仅构建 Chrome：
+### Chrome
 
-```bash
-npm run build:chrome
-```
+1. 打开 `chrome://extensions/`
+2. 开启「开发者模式」
+3. 点击「加载已解压的扩展程序」
+4. 选择 `./dist/chrome`
 
-仅构建 Firefox：
+### Firefox（临时）
 
-```bash
-npm run build:firefox
-```
+1. 打开 `about:debugging#/runtime/this-firefox`
+2. 点击「临时加载附加组件...」
+3. 选择 `./dist/firefox/manifest.json`
 
-## 项目结构
+### Firefox（永久）
 
-```text
-.
-├── manifest.json      # 统一清单（含 extension.js 浏览器前缀字段）
-├── src/               # 扩展源代码
-│   ├── background.js
-│   ├── content.js
-│   ├── constants.js
-│   ├── url-pattern.js
-│   └── options/
-│       ├── options.html
-│       ├── options.css
-│       ├── options.js
-│       └── rule-config.js
-├── tools/             # 开发工具脚本（避免用 scripts/ 名称）
-│   └── generate-icons.js
-├── icons/
-└── dist/              # extension.js 构建产物
-```
-
-## 浏览器差异处理
-
-在 `manifest.json` 中使用 extension.js 的浏览器前缀字段：
-
-- `background.service_worker` 作为 Chromium 默认实现
-- `firefox:background.scripts` 覆盖 Firefox 后台脚本配置
-- `firefox:browser_specific_settings` 提供 Gecko 扩展 ID
-
-运行时 API 统一使用 `browser.*`。项目脚本已显式开启 extension.js 的 `--polyfill` 选项，确保 Chromium 与 Firefox 行为一致。
-
-## 功能说明
-
-- 点击工具栏图标：打开 Gemini 并携带 `当前 URL + 匹配到的 Prompt`
-- 快捷键命令：`open-gemini`
-- 选项页：按顺序配置 URL 规则（支持通用 URL 匹配模式；也支持直接写域名如 `github.com`，会自动按 `*://github.com/*` 匹配），支持默认规则
-
-## 许可证
-
-MIT
+1. 下载 [Firefox 开发者版](https://www.mozilla.org/firefox/developer/)
+2. 打开 `about:addons`
+3. 点击齿轮 →「从文件安装附加组件」
+4. 选择 `./dist/firefox/gemini-url-1.0.0.zip`
