@@ -8,8 +8,8 @@
 ```bash
 git clone https://github.com/smilingpoplar/gemini-quickopen.git
 cd gemini-quickopen
-npm install
-npm run build
+pnpm install
+pnpm build
 ```
 
 ### Chrome
@@ -17,17 +17,17 @@ npm run build
 1. Open `chrome://extensions/`
 2. Enable "Developer mode"
 3. Click "Load unpacked extension"
-4. Select `./dist/chrome`
+4. Select `./dist/chrome-mv3`
 
 ### Firefox (Temporary)
 
 1. Open `about:debugging#/runtime/this-firefox`
 2. Click "Load Temporary Add-on..."
-3. Select `./dist/firefox/manifest.json`
+3. Select `./dist/firefox-mv2/manifest.json`
 
 ### Firefox (Permanent)
 
 1. Download [Firefox Developer Edition](https://www.mozilla.org/firefox/developer/)
 2. Open `about:addons`
 3. Click gear → "Install Add-on From File"
-4. Select `./dist/firefox/gemini-quickopen-1.0.0.zip`
+4. Select the generated zip under `./dist/*-firefox.zip`

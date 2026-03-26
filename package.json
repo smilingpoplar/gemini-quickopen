@@ -1,29 +1,20 @@
 {
   "name": "gemini-quickopen",
-  "version": "1.0.0",
-  "description": "点击图标即可将当前网页 URL 发送到 Gemini 进行分析。",
-  "scripts": {
-    "dev": "extension dev --polyfill",
-    "start": "extension start --polyfill",
-    "preview": "extension preview --polyfill",
-    "build": "npm run build:chrome && npm run build:firefox",
-    "build:chrome": "extension build --browser=chrome --polyfill --zip",
-    "build:firefox": "extension build --browser=firefox --polyfill --zip",
-    "test": "node --test"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "MIT",
+  "version": "1.1.0",
+  "description": "在 Gemini 中快捷打开当前页面并自动注入上下文",
+  "private": true,
   "type": "module",
-  "devDependencies": {
-    "babel-loader": "^10.0.0",
-    "canvas": "^3.2.1",
-    "extension": "^3.6.0"
+  "packageManager": "pnpm@10.17.1",
+  "scripts": {
+    "dev": "wxt",
+    "build": "pnpm build:chrome && pnpm build:firefox",
+    "build:chrome": "wxt zip -b chrome",
+    "build:firefox": "wxt zip -b firefox",
+    "icons:gen": "tsx tools/generate-icons.ts",
+    "test": "tsx --test tests/**/*.test.ts",
+    "typecheck": "wxt prepare && tsc --noEmit"
   },
   "dependencies": {
-    "@babel/core": "^7.29.0",
-    "@babel/preset-env": "^7.29.0",
-    "@babel/preset-react": "^7.28.5",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -31,5 +22,20 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "webext-patterns": "^1.5.1"
+  },
+  "devDependencies": {
+    "@types/firefox-webext-browser": "^120.0.4",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.15.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@wxt-dev/module-react": "^1.2.2",
+    "autoprefixer": "^10.4.21",
+    "canvas": "^3.2.2",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "wxt": "^0.20.20"
   }
 }
