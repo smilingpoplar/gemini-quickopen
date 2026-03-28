@@ -13,6 +13,7 @@ test('when only warm popup exists, focus should still trigger normal window crea
     onTabRemoved: null,
     onWindowRemoved: null,
     onFocusChanged: null,
+    onMessage: null,
   };
   const createWindowCalls: any[] = [];
 
@@ -22,6 +23,11 @@ test('when only warm popup exists, focus should still trigger normal window crea
   (globalThis as any).browser = {
     runtime: {
       getURL: () => 'chrome-extension://test-extension/',
+      onMessage: {
+        addListener: (handler: unknown) => {
+          listeners.onMessage = handler;
+        },
+      },
     },
     storage: {
       session: {
@@ -79,9 +85,13 @@ test('when only warm popup exists, focus should still trigger normal window crea
       },
       create: async (config: any) => {
         createWindowCalls.push(config);
+        const tabId = config.tabId ?? 1002;
+        queueMicrotask(() => {
+          listeners.onMessage?.({ type: 'GEMINI_CONTENT_READY' }, { tab: { id: tabId } });
+        });
         return {
           id: typeof config.tabId === 'number' ? 1001 : 1000,
-          tabs: [{ id: config.tabId ?? 1002, url: config.url ?? 'about:blank' }],
+          tabs: [{ id: tabId, url: config.url ?? 'about:blank' }],
         };
       },
       update: async () => {},
@@ -91,16 +101,17 @@ test('when only warm popup exists, focus should still trigger normal window crea
   };
 
   try {
-    const moduleUrl = `${pathToFileURL(path.resolve('src/background/warm-instance.ts')).href}?test=${Date.now()}`;
+    const moduleUrl = `${pathToFileURL(path.resolve('src/background/warm/providers/chrome-popup-warm-provider.ts')).href}?test=${Date.now()}`;
     let nowValue = 5000;
     Date.now = () => nowValue;
 
-    const { warmInstance } = await import(moduleUrl);
-    warmInstance._scheduleFill = () => {};
+    const { ChromePopupWarmProvider } = await import(moduleUrl);
+    const provider = new ChromePopupWarmProvider();
+    (provider as any)._scheduleEnsureReady = () => {};
 
-    const originalEnsureOnScreenWindowFromActivation = warmInstance._ensureOnScreenWindowFromActivation.bind(warmInstance);
+    const originalEnsureOnScreenWindowFromActivation = (provider as any)._ensureOnScreenWindowFromActivation.bind(provider);
     let pendingEnsure: Promise<void> | null = null;
-    warmInstance._ensureOnScreenWindowFromActivation = () => {
+    (provider as any)._ensureOnScreenWindowFromActivation = () => {
       pendingEnsure = originalEnsureOnScreenWindowFromActivation();
       return pendingEnsure;
     };
@@ -136,6 +147,7 @@ test('closing the last normal window should not immediately auto-reopen a normal
     onTabRemoved: null,
     onWindowRemoved: null,
     onFocusChanged: null,
+    onMessage: null,
   };
   const createWindowCalls: any[] = [];
 
@@ -145,6 +157,11 @@ test('closing the last normal window should not immediately auto-reopen a normal
   (globalThis as any).browser = {
     runtime: {
       getURL: () => 'chrome-extension://test-extension/',
+      onMessage: {
+        addListener: (handler: unknown) => {
+          listeners.onMessage = handler;
+        },
+      },
     },
     storage: {
       session: {
@@ -202,9 +219,13 @@ test('closing the last normal window should not immediately auto-reopen a normal
       },
       create: async (config: any) => {
         createWindowCalls.push(config);
+        const tabId = config.tabId ?? 1002;
+        queueMicrotask(() => {
+          listeners.onMessage?.({ type: 'GEMINI_CONTENT_READY' }, { tab: { id: tabId } });
+        });
         return {
           id: typeof config.tabId === 'number' ? 1001 : 1000,
-          tabs: [{ id: config.tabId ?? 1002, url: config.url ?? 'about:blank' }],
+          tabs: [{ id: tabId, url: config.url ?? 'about:blank' }],
         };
       },
       update: async () => {},
@@ -214,13 +235,14 @@ test('closing the last normal window should not immediately auto-reopen a normal
   };
 
   try {
-    const moduleUrl = `${pathToFileURL(path.resolve('src/background/warm-instance.ts')).href}?test=${Date.now()}-close`;
-    const { warmInstance } = await import(moduleUrl);
-    warmInstance._scheduleFill = () => {};
+    const moduleUrl = `${pathToFileURL(path.resolve('src/background/warm/providers/chrome-popup-warm-provider.ts')).href}?test=${Date.now()}-close`;
+    const { ChromePopupWarmProvider } = await import(moduleUrl);
+    const provider = new ChromePopupWarmProvider();
+    (provider as any)._scheduleEnsureReady = () => {};
 
-    const originalEnsureOnScreenWindowFromActivation = warmInstance._ensureOnScreenWindowFromActivation.bind(warmInstance);
+    const originalEnsureOnScreenWindowFromActivation = (provider as any)._ensureOnScreenWindowFromActivation.bind(provider);
     let pendingEnsure: Promise<void> | null = null;
-    warmInstance._ensureOnScreenWindowFromActivation = () => {
+    (provider as any)._ensureOnScreenWindowFromActivation = () => {
       pendingEnsure = originalEnsureOnScreenWindowFromActivation();
       return pendingEnsure;
     };

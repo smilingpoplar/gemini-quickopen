@@ -1,11 +1,17 @@
 export const GEMINI_URL = 'https://gemini.google.com/app';
 
 export const IS_CHROME = browser.runtime.getURL('').startsWith('chrome-extension://');
+export const IS_FIREFOX = browser.runtime.getURL('').startsWith('moz-extension://');
+export const CAN_HIDE_TABS = IS_FIREFOX
+  && typeof browser.tabs.hide === 'function'
+  && typeof browser.tabs.show === 'function';
 
 export const STORAGE_KEY_TAB = 'prerenderTabId';
 export const STORAGE_KEY_WINDOW = 'prerenderWindowId';
+export const STORAGE_KEY_KIND = 'prerenderKind';
 export const STORAGE_KEY_TAB_PERSIST = 'prerenderTabIdPersist';
 export const STORAGE_KEY_WINDOW_PERSIST = 'prerenderWindowIdPersist';
+export const STORAGE_KEY_KIND_PERSIST = 'prerenderKindPersist';
 
 export const WINDOW_ID_NONE = browser.windows?.WINDOW_ID_NONE ?? -1;
 

@@ -1,3 +1,5 @@
+import { GEMINI_CONTENT_READY } from '../background/gemini-ready-tracker';
+
 function waitForElement(selector: string, timeout = 10000): Promise<Element> {
   return new Promise((resolve, reject) => {
     const element = document.querySelector(selector);
@@ -66,9 +68,13 @@ async function runAutoSubmit(query: string): Promise<void> {
 }
 
 export default function installGeminiMessageListener(): void {
+  void browser.runtime.sendMessage({ type: GEMINI_CONTENT_READY }).catch(() => undefined);
+
   browser.runtime.onMessage.addListener((message: { type?: string; queryText?: string }) => {
     if (message.type === 'GEMINI_QUERY') {
       void runAutoSubmit(message.queryText || '');
     }
+
+    return undefined;
   });
 }

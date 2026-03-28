@@ -12,9 +12,18 @@ function createBrowserMock({
   normalWindows: any[];
   createWindow?: (config: any) => any;
 }) {
+  const listeners: Record<string, any> = {
+    onMessage: null,
+  };
+
   return {
     runtime: {
       getURL: () => 'chrome-extension://test-extension/',
+      onMessage: {
+        addListener: (handler: unknown) => {
+          listeners.onMessage = handler;
+        },
+      },
     },
     storage: {
       session: {
@@ -57,6 +66,9 @@ function createBrowserMock({
       },
       create: async (config: any) => {
         if (createWindow) return createWindow(config);
+        queueMicrotask(() => {
+          listeners.onMessage?.({ type: 'GEMINI_CONTENT_READY' }, { tab: { id: 1001 } });
+        });
         return {
           id: 1000,
           tabs: [{ id: 1001, url: config.url ?? 'about:blank' }],
@@ -85,10 +97,11 @@ test('state should become ready after fill adopts warm popup', async () => {
   });
 
   try {
-    const moduleUrl = `${pathToFileURL(path.resolve('src/background/warm-instance.ts')).href}?state-ready=${Date.now()}`;
-    const { warmInstance } = await import(moduleUrl);
-    await warmInstance.fill();
-    assert.equal(warmInstance.state, 'ready');
+    const moduleUrl = `${pathToFileURL(path.resolve('src/background/warm/providers/chrome-popup-warm-provider.ts')).href}?state-ready=${Date.now()}`;
+    const { ChromePopupWarmProvider } = await import(moduleUrl);
+    const provider = new ChromePopupWarmProvider();
+    await provider.ensureReady();
+    assert.equal(provider.state, 'ready');
   } finally {
     (globalThis as any).browser = originalBrowser;
   }
@@ -110,12 +123,13 @@ test('state should become recovering right after dequeue consumes a warm item', 
   });
 
   try {
-    const moduleUrl = `${pathToFileURL(path.resolve('src/background/warm-instance.ts')).href}?state-recovering=${Date.now()}`;
-    const { warmInstance } = await import(moduleUrl);
-    await warmInstance.fill();
-    const consumed = await warmInstance.dequeue(20);
+    const moduleUrl = `${pathToFileURL(path.resolve('src/background/warm/providers/chrome-popup-warm-provider.ts')).href}?state-recovering=${Date.now()}`;
+    const { ChromePopupWarmProvider } = await import(moduleUrl);
+    const provider = new ChromePopupWarmProvider();
+    await provider.ensureReady();
+    const consumed = await provider.acquire(20);
     assert.equal(consumed?.tabId, 901);
-    assert.equal(warmInstance.state, 'recovering');
+    assert.equal(provider.state, 'recovering');
   } finally {
     (globalThis as any).browser = originalBrowser;
   }
@@ -131,10 +145,11 @@ test('state should return to idle when fill cannot create a usable warm item', a
   });
 
   try {
-    const moduleUrl = `${pathToFileURL(path.resolve('src/background/warm-instance.ts')).href}?state-idle=${Date.now()}`;
-    const { warmInstance } = await import(moduleUrl);
-    await warmInstance.fill();
-    assert.equal(warmInstance.state, 'idle');
+    const moduleUrl = `${pathToFileURL(path.resolve('src/background/warm/providers/chrome-popup-warm-provider.ts')).href}?state-idle=${Date.now()}`;
+    const { ChromePopupWarmProvider } = await import(moduleUrl);
+    const provider = new ChromePopupWarmProvider();
+    await provider.ensureReady();
+    assert.equal(provider.state, 'idle');
   } finally {
     (globalThis as any).browser = originalBrowser;
   }
