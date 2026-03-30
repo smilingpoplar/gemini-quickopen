@@ -1,6 +1,6 @@
 {
   "name": "gemini-quickopen",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "description": "在 Gemini 中快捷打开当前页面并自动注入上下文",
   "private": true,
   "type": "module",
