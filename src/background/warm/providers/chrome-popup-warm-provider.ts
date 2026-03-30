@@ -1,6 +1,7 @@
 import {
   FILL_DELAY_MS,
   GEMINI_URL,
+  STORAGE_KEY_WARM_POPUP_SUPPRESS_UNTIL,
   WINDOW_ID_NONE,
 } from '../../constants';
 import {
@@ -20,12 +21,16 @@ import { WarmResourceStore } from '../warm-resource-store';
 import type { WarmItem } from '../types';
 import { BaseWarmProvider } from './base-warm-provider';
 
+const FOCUS_CHANGE_RECHECK_DELAY_MS = 150;
+
 class ChromePopupWarmProvider extends BaseWarmProvider {
   private _isCreating: boolean;
   private _isEnsuringOnScreenWindow: boolean;
   private _isWaitingForOnScreenWindow: boolean;
   private _suppressWarmPopupActivationUntil: number;
   private _fillTimer: ReturnType<typeof setTimeout> | null;
+  private _focusRecheckTimer: ReturnType<typeof setTimeout> | null;
+  private _focusRecheckSeq: number;
   private _store: WarmResourceStore;
 
   constructor(store = new WarmResourceStore()) {
@@ -36,6 +41,8 @@ class ChromePopupWarmProvider extends BaseWarmProvider {
     this._isWaitingForOnScreenWindow = false;
     this._suppressWarmPopupActivationUntil = 0;
     this._fillTimer = null;
+    this._focusRecheckTimer = null;
+    this._focusRecheckSeq = 0;
     this._store = store;
     this._init();
   }
@@ -62,6 +69,97 @@ class ChromePopupWarmProvider extends BaseWarmProvider {
     this._fillTimer = setTimeout(() => {
       this._fillTimer = null;
       void this.requestEnsureReady();
+    }, delayMs);
+  }
+
+  async _setWarmPopupSuppressionUntil(until: number) {
+    this._suppressWarmPopupActivationUntil = until;
+    const payload = { [STORAGE_KEY_WARM_POPUP_SUPPRESS_UNTIL]: until };
+    try {
+      await browser.storage.session.set(payload);
+    } catch {
+      // noop
+    }
+  }
+
+  async _clearWarmPopupSuppression() {
+    this._suppressWarmPopupActivationUntil = 0;
+    try {
+      await browser.storage.session.remove(STORAGE_KEY_WARM_POPUP_SUPPRESS_UNTIL);
+    } catch {
+      // fall through
+    }
+
+    try {
+      await browser.storage.local.remove(STORAGE_KEY_WARM_POPUP_SUPPRESS_UNTIL);
+    } catch {
+      // noop
+    }
+  }
+
+  _normalizeSuppressionUntil(value: unknown) {
+    if (typeof value !== 'number') return 0;
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  async _getWarmPopupSuppressionUntil() {
+    const now = Date.now();
+    if (this._suppressWarmPopupActivationUntil > now) {
+      return this._suppressWarmPopupActivationUntil;
+    }
+
+    try {
+      const sessionResult = await browser.storage.session.get(STORAGE_KEY_WARM_POPUP_SUPPRESS_UNTIL);
+      const sessionUntil = this._normalizeSuppressionUntil(sessionResult[STORAGE_KEY_WARM_POPUP_SUPPRESS_UNTIL]);
+      if (sessionUntil > now) {
+        this._suppressWarmPopupActivationUntil = sessionUntil;
+        return sessionUntil;
+      }
+    } catch {
+      // fall through
+    }
+
+    try {
+      const localResult = await browser.storage.local.get(STORAGE_KEY_WARM_POPUP_SUPPRESS_UNTIL);
+      const localUntil = this._normalizeSuppressionUntil(localResult[STORAGE_KEY_WARM_POPUP_SUPPRESS_UNTIL]);
+      if (localUntil > now) {
+        this._suppressWarmPopupActivationUntil = localUntil;
+        return localUntil;
+      }
+    } catch {
+      // noop
+    }
+
+    this._suppressWarmPopupActivationUntil = 0;
+    return 0;
+  }
+
+  _scheduleEnsureOnScreenWindowFromFocusChange(delayMs = FOCUS_CHANGE_RECHECK_DELAY_MS) {
+    const seq = ++this._focusRecheckSeq;
+    if (this._focusRecheckTimer) {
+      clearTimeout(this._focusRecheckTimer);
+    }
+
+    this._focusRecheckTimer = setTimeout(() => {
+      this._focusRecheckTimer = null;
+      void (async () => {
+        if (seq !== this._focusRecheckSeq) return;
+        if (!this._isWaitingForOnScreenWindow) return;
+
+        const hasOnScreenWindows = await this._hasOnScreenWindows();
+        if (hasOnScreenWindows) {
+          this._isWaitingForOnScreenWindow = false;
+          await this._clearWarmPopupSuppression();
+          return;
+        }
+
+        const suppressUntil = await this._getWarmPopupSuppressionUntil();
+        if (Date.now() < suppressUntil) {
+          return;
+        }
+
+        void this._ensureOnScreenWindowFromActivation();
+      })();
     }, delayMs);
   }
 
@@ -107,7 +205,7 @@ class ChromePopupWarmProvider extends BaseWarmProvider {
     const hasWindows = await this._hasOnScreenWindows();
     if (!hasWindows) {
       this._isWaitingForOnScreenWindow = true;
-      this._suppressWarmPopupActivationUntil = Date.now() + 800;
+      await this._setWarmPopupSuppressionUntil(Date.now() + 800);
       this._scheduleEnsureReady(0);
       return;
     }
@@ -126,11 +224,13 @@ class ChromePopupWarmProvider extends BaseWarmProvider {
     const hasOnScreenWindows = await this._hasOnScreenWindows();
     if (hasOnScreenWindows) {
       this._isWaitingForOnScreenWindow = false;
+      await this._clearWarmPopupSuppression();
       return;
     }
 
     const isWarmPopup = await this._isWarmPopupWindow(windowId);
-    if (isWarmPopup && Date.now() < this._suppressWarmPopupActivationUntil) {
+    const suppressUntil = await this._getWarmPopupSuppressionUntil();
+    if (isWarmPopup && Date.now() < suppressUntil) {
       return;
     }
     if (!isWarmPopup && !this._isWaitingForOnScreenWindow) {
@@ -138,7 +238,8 @@ class ChromePopupWarmProvider extends BaseWarmProvider {
     }
 
     this._isWaitingForOnScreenWindow = true;
-    void this._ensureOnScreenWindowFromActivation();
+    await this._clearWarmPopupSuppression();
+    this._scheduleEnsureOnScreenWindowFromFocusChange();
   }
 
   async _hasOnScreenWindows() {

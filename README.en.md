@@ -1,5 +1,6 @@
 # Gemini QuickOpen
 
+- Pre-warm Gemini in the background to speed up opening
 - Click toolbar icon → Send current webpage to Gemini for analysis
 - In the extension options, add Prompt, URL rules, and CSS selector (optional). If the CSS selector is empty, the URL will be sent; if not empty, text will be extracted simultaneously.
 
